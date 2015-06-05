@@ -6,8 +6,17 @@ $(document).ready( function() {
 		var tags = $(this).find("input[name='tags']").val();
 		getUnanswered(tags);
 	});
+
+	$('.inspiration-getter').submit( function(event){
+		// zero out results if previous search has run
+		$('.results').html('');
+		// get the value of the tags the user submitted
+		var tags = $(this).find("input[name='tags']").val();
+		getAnswerers(tags);
+	});
 });
 
+/*--- Get Unanswered Questions ---*/
 // this function takes the question object returned by StackOverflow 
 // and creates new result to be appended to DOM
 var showQuestion = function(question) {
@@ -88,5 +97,60 @@ var getUnanswered = function(tags) {
 	});
 };
 
+/*--- View Top Answerers ---*/
+var showAnswerer = function(answerer) {
+	
+	// clone our result template code
+	var result = $('.templates .answerers').clone();
+	
+	// Set the profile image in result
+	var profileImage = result.find('.profile-image');
+	profileImage.attr('src', answerer.user.profile_image);
 
+	// Set the display name in result
+	var displayName = result.find('.display-name a');
+	displayName.text(answerer.user.display_name);
+
+	// Set the user reputation in result 
+	var userReputation = result.find('.user-reputation');
+	userReputation.text(answerer.user.reputation);
+
+	// Set the user postcount in result
+	var userPostcount = result.find('.user-postcount');
+	userPostcount.text(answerer.post_count);
+
+	// Set the user score in result
+	var userScore = result.find('.user-score');
+	userScore.text(answerer.score);
+
+	return result;
+};
+
+var getAnswerers = function(tags) {
+	
+	// the parameters we need to pass in our request to StackOverflow's API
+	var request = {tag: tags, 
+		site: 'stackoverflow'};
+	
+	var result = $.ajax({
+		url: "http://api.stackexchange.com/2.2/tags/" + tags + "/top-answerers/all_time",
+		data: request,
+		dataType: "jsonp",
+		type: "GET",
+		})
+	.done(function(result){
+		var searchResults = showSearchResults(request.tag, result.items.length);
+
+		$('.search-results').html(searchResults);
+
+		$.each(result.items, function(i, items) {
+			var answerer = showAnswerer(items);
+			$('.results').append(answerer);
+		});
+	})
+	.fail(function(jqXHR, error, errorThrown){
+		var errorElem = showError(error);
+		$('.search-results').append(errorElem);
+	});
+};
 
